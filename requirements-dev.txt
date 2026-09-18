@@ -1,0 +1,11 @@
+-r requirements.txt
+pytest==8.3.4
+pytest-asyncio==0.25.0
+httpx==0.28.1
+ruff==0.8.4
+
+# Только для сборки PDF из документации (make docs-pdf).
+# Playwright после установки требует один раз скачать браузер:
+#   playwright install chromium
+Markdown==3.7
+playwright==1.49.1
