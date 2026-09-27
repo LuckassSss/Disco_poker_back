@@ -40,15 +40,15 @@ class StakeLevel(BaseModel):
 DEFAULT_STAKES: list[StakeLevel] = [
     StakeLevel(
         code="micro", title="Микро", small_blind=1, big_blind=2,
-        min_buy_in=80, max_buy_in=200,
+        min_buy_in=80, max_buy_in=10_000,
     ),
     StakeLevel(
         code="low", title="Низкие", small_blind=5, big_blind=10,
-        min_buy_in=400, max_buy_in=1000,
+        min_buy_in=400, max_buy_in=10_000,
     ),
     StakeLevel(
         code="mid", title="Средние", small_blind=25, big_blind=50,
-        min_buy_in=2000, max_buy_in=5000,
+        min_buy_in=2000, max_buy_in=10_000,
     ),
 ]
 

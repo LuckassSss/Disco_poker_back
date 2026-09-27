@@ -63,6 +63,8 @@ async def bot(index: int, base_url: str, ws_url: str, stake: str, hands: int, qu
     token = await asyncio.to_thread(get_token, base_url, nickname)
     rng = Lcg(1000 + index)
     finished = 0
+    seat_no = -1
+    min_buy_in = max_buy_in = 0
 
     async with await connect(f"{ws_url}/ws?token={token}") as ws:
         await ws.send(json.dumps({"t": "quick_join", "d": {"stake": stake}}))
@@ -71,8 +73,12 @@ async def bot(index: int, base_url: str, ws_url: str, stake: str, hands: int, qu
             message = json.loads(raw)
             kind, data = message.get("t"), message.get("d", {})
 
-            if kind == "joined_table" and not quiet:
-                print(f"[{nickname}] сел за {data['table']['table_id']}, место {data['you']['seat_no']}")
+            if kind == "joined_table":
+                seat_no = data["you"]["seat_no"]
+                min_buy_in = data["table"]["stake"]["min_buy_in"]
+                max_buy_in = data["table"]["stake"]["max_buy_in"]
+                if not quiet:
+                    print(f"[{nickname}] сел за {data['table']['table_id']}, место {seat_no}")
 
             elif kind == "action_required" and data.get("options"):
                 await asyncio.sleep(0.15 + rng.next(40) / 100)
@@ -93,6 +99,13 @@ async def bot(index: int, base_url: str, ws_url: str, stake: str, hands: int, qu
 
             elif kind == "hand_finished":
                 finished += 1
+                # стек ниже минимального бай-ина — доливаем до максимума, иначе сервер посадит бота в сит-аут
+                mine = next((x for x in data.get("seats", []) if x["seat_no"] == seat_no), None)
+                if mine and mine["stack_after"] < min_buy_in:
+                    top_up = max_buy_in - mine["stack_after"]
+                    await ws.send(json.dumps({"t": "rebuy", "d": {"amount": top_up}}))
+                    if not quiet:
+                        print(f"[{nickname}] докупка +{top_up}")
                 if index == 0 and not quiet:
                     winners = ", ".join(
                         f"место {w['seat_no']} +{w['amount']}"
