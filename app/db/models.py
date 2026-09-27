@@ -26,6 +26,11 @@ class Player(Base):
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     nickname: Mapped[str] = mapped_column(String(32), nullable=False)
     is_guest: Mapped[bool] = mapped_column(default=True, nullable=False)
+    #: у гостей пусто; у зарегистрированных — уникальный логин и scrypt-хэш пароля
+    login: Mapped[str | None] = mapped_column(String(32), unique=True, nullable=True)
+    password_hash: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    #: jti текущего токена; всё, что выдано раньше, отозвано
+    session_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
     balance: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
     created_at: Mapped[dt.datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

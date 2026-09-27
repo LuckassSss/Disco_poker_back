@@ -48,6 +48,73 @@ class PlayerRepository:
                 "persisted": True,
             }
 
+    async def get_by_login(self, login: str) -> dict | None:
+        async with session_scope() as session:
+            if session is None:
+                return None
+            from sqlalchemy import select  # noqa: PLC0415
+
+            from app.db.models import Player  # noqa: PLC0415
+
+            row = await session.execute(select(Player).where(Player.login == login))
+            player = row.scalar_one_or_none()
+            if player is None:
+                return None
+            return {
+                "id": player.id,
+                "nickname": player.nickname,
+                "password_hash": player.password_hash,
+            }
+
+    async def create_user(
+        self, player_id: str, login: str, nickname: str, password_hash: str
+    ) -> None:
+        """ValueError, если логин уже занят (уникальный индекс в БД)."""
+        async with session_scope() as session:
+            if session is None:
+                return
+            from sqlalchemy.exc import IntegrityError  # noqa: PLC0415
+
+            from app.db.models import Player  # noqa: PLC0415
+
+            session.add(
+                Player(
+                    id=player_id,
+                    nickname=nickname,
+                    is_guest=False,
+                    login=login,
+                    password_hash=password_hash,
+                    balance=settings.guest_start_balance,
+                )
+            )
+            try:
+                await session.flush()
+            except IntegrityError as exc:
+                raise ValueError("login taken") from exc
+
+    async def get_session(self, player_id: str) -> str | None:
+        async with session_scope() as session:
+            if session is None:
+                return None
+            from sqlalchemy import select  # noqa: PLC0415
+
+            from app.db.models import Player  # noqa: PLC0415
+
+            row = await session.execute(
+                select(Player.session_id).where(Player.id == player_id)
+            )
+            return row.scalar_one_or_none()
+
+    async def set_session(self, player_id: str, session_id: str) -> None:
+        async with session_scope() as session:
+            if session is None:
+                return
+            from app.db.models import Player  # noqa: PLC0415
+
+            player = await session.get(Player, player_id)
+            if player is not None:
+                player.session_id = session_id
+
     async def adjust_balance(self, player_id: str, delta: int) -> int | None:
         async with session_scope() as session:
             if session is None:

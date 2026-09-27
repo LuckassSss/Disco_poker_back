@@ -5,10 +5,13 @@
 """
 from __future__ import annotations
 
+import uuid
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from app.auth.tokens import AuthError, decode_token, issue_guest_token
+from app.auth.tokens import AuthError, issue_token, sessions, verify_token
+from app.auth.users import UserError, users
 from app.config import settings
 from app.core.deck_provider import deck_provider
 from app.db.session import is_enabled as db_enabled
@@ -28,7 +31,20 @@ class GuestAuthRequest(BaseModel):
     token: str | None = None
 
 
-class GuestAuthResponse(BaseModel):
+class CredentialsRequest(BaseModel):
+    login: str = Field(min_length=3, max_length=32)
+    password: str = Field(min_length=6, max_length=128)
+
+
+class RegisterRequest(CredentialsRequest):
+    nickname: str | None = Field(default=None, max_length=24)
+
+
+class RefreshRequest(BaseModel):
+    token: str
+
+
+class AuthResponse(BaseModel):
     token: str
     player_id: str
     nickname: str
@@ -36,8 +52,54 @@ class GuestAuthResponse(BaseModel):
     balance: int
 
 
-@router.post("/auth/guest", response_model=GuestAuthResponse, tags=["auth"])
-async def auth_guest(body: GuestAuthRequest) -> GuestAuthResponse:
+async def _issue(player_id: str, nickname: str, guest: bool) -> AuthResponse:
+    """Выдаёт токен и отзывает все прежние токены игрока (новый ``jti``)."""
+    account = await accounts.ensure(player_id, nickname)
+    session_id = await sessions.issue(player_id)
+    token, claims = issue_token(player_id, nickname, guest=guest, session_id=session_id)
+    return AuthResponse(
+        token=token,
+        player_id=claims.player_id,
+        nickname=claims.nickname,
+        expires_at=claims.expires_at,
+        balance=account.balance,
+    )
+
+
+@router.post("/auth/register", response_model=AuthResponse, status_code=201, tags=["auth"])
+async def auth_register(body: RegisterRequest) -> AuthResponse:
+    """Регистрация по логину и паролю. Сразу выдаёт токен на 3 дня."""
+    try:
+        user = await users.register(body.login, body.password, body.nickname)
+    except UserError as exc:
+        raise HTTPException(status_code=exc.status, detail=str(exc)) from exc
+    return await _issue(user.player_id, user.nickname, guest=False)
+
+
+@router.post("/auth/login", response_model=AuthResponse, tags=["auth"])
+async def auth_login(body: CredentialsRequest) -> AuthResponse:
+    user = await users.authenticate(body.login, body.password)
+    if user is None:
+        raise HTTPException(status_code=401, detail="Неверный логин или пароль")
+    return await _issue(user.player_id, user.nickname, guest=False)
+
+
+@router.post("/auth/refresh", response_model=AuthResponse, tags=["auth"])
+async def auth_refresh(body: RefreshRequest) -> AuthResponse:
+    """Продление ещё живого токена: новый токен с новым сроком (3 дня для аккаунта).
+
+    Старый токен после этого отозван. Просроченный или отозванный → 401: клиент
+    показывает форму входа по логину и паролю.
+    """
+    try:
+        claims = await verify_token(body.token)
+    except AuthError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+    return await _issue(claims.player_id, claims.nickname, claims.guest)
+
+
+@router.post("/auth/guest", response_model=AuthResponse, tags=["auth"])
+async def auth_guest(body: GuestAuthRequest) -> AuthResponse:
     """Гостевой вход. Заглушка до появления настоящих аккаунтов.
 
     Без ``token`` создаётся новая личность. С валидным ``token`` продлевается
@@ -46,19 +108,12 @@ async def auth_guest(body: GuestAuthRequest) -> GuestAuthResponse:
     previous_id: str | None = None
     if body.token:
         try:
-            previous_id = decode_token(body.token).player_id
+            previous_id = (await verify_token(body.token)).player_id
         except AuthError as exc:
             raise HTTPException(status_code=401, detail=str(exc)) from exc
 
-    token, claims = issue_guest_token(body.nickname, previous_id)
-    account = await accounts.ensure(claims.player_id, claims.nickname)
-    return GuestAuthResponse(
-        token=token,
-        player_id=claims.player_id,
-        nickname=claims.nickname,
-        expires_at=claims.expires_at,
-        balance=account.balance,
-    )
+    player_id = previous_id or f"guest-{uuid.uuid4().hex[:12]}"
+    return await _issue(player_id, body.nickname.strip() or "Guest", guest=True)
 
 
 @router.get("/health", tags=["service"])

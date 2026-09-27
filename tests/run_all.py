@@ -23,6 +23,7 @@ MODULES = [
     "tests.test_deck_provider",
     "tests.test_game_flow",
     "tests.test_ws_client",
+    "tests.test_auth",
     "tests.test_simulation",
     # прогоны с живым сервисным слоем идут последними: они меняют глобальные
     # настройки (ускоряют таймеры), чтобы не ждать реального времени

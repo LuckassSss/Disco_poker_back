@@ -72,6 +72,8 @@ class Settings(BaseSettings):
     #: Протухший гостевой токен = потерянный баланс, вернуть его нечем.
     #: С появлением настоящих аккаунтов здесь появится короткий access + refresh.
     guest_token_ttl_seconds: int = 60 * 60 * 24 * 30
+    #: токен аккаунта (логин/пароль) живёт 3 дня и продлевается каждым входом через /auth/refresh
+    account_token_ttl_seconds: int = 60 * 60 * 24 * 3
 
     # --- хранилища ----------------------------------------------------------
     postgres_dsn: str = "postgresql+asyncpg://poker:poker@localhost:5432/poker"

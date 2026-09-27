@@ -20,7 +20,7 @@ import time
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
 
-from app.auth.tokens import AuthError, TokenClaims, decode_token
+from app.auth.tokens import AuthError, TokenClaims, verify_token
 from app.config import settings
 from app.protocol.messages import (
     ActionPayload,
@@ -143,7 +143,7 @@ async def _authenticate(websocket: WebSocket, token: str | None) -> TokenClaims 
     """Достаёт claims из query-параметра или ждёт первое сообщение ``auth``."""
     if token:
         try:
-            return decode_token(token)
+            return await verify_token(token)
         except AuthError as exc:
             await websocket.send_json(error(ErrorCode.UNAUTHORIZED, str(exc)))
             await websocket.close(code=4401)
@@ -154,7 +154,7 @@ async def _authenticate(websocket: WebSocket, token: str | None) -> TokenClaims 
         if envelope.t is not ClientMessageType.AUTH:
             raise AuthError("Первым сообщением ожидается auth")
         payload = AuthPayload.model_validate(envelope.d)
-        return decode_token(payload.token)
+        return await verify_token(payload.token)
     except (AuthError, ValidationError, KeyError, json.JSONDecodeError) as exc:
         await websocket.send_json(error(ErrorCode.UNAUTHORIZED, str(exc)))
         await websocket.close(code=4401)
