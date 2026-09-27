@@ -6,7 +6,7 @@ help:
 	@echo "test      — прогнать тесты (pytest, с фолбэком на свой раннер)"
 	@echo "lint      — ruff"
 	@echo "decks     — перегенерировать data/decks.json (COUNT=10)"
-	@echo "bots      — посадить ботов за стол (BOTS=6 HANDS=10)"
+	@echo "bots      — посадить ботов за стол (BOTS=4 HANDS=10)"
 	@echo "docs-pdf  — пересобрать PDF-версии документации"
 	@echo "up/down   — docker compose"
 
@@ -26,7 +26,7 @@ COUNT ?= 10
 decks:
 	python scripts/generate_decks.py --count $(COUNT)
 
-BOTS ?= 6
+BOTS ?= 4
 HANDS ?= 10
 bots:
 	python3 scripts/bot_client.py --bots $(BOTS) --hands $(HANDS)

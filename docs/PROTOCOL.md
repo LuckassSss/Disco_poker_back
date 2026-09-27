@@ -108,7 +108,7 @@ HTTP нужен только чтобы получить токен и посм�
 
 ```json
 {
-  "table":  { "table_id": "low-a1b2c3d4", "stake": {...}, "max_seats": 6,
+  "table":  { "table_id": "low-a1b2c3d4", "stake": {...}, "max_seats": 5,
               "state": "hand_in_progress", "button_seat": 2, "hand_no": 41 },
   "seats":  [ { "seat_no": 0, "player_id": "guest-…", "nickname": "Женя",
                 "stack": 940, "state": "in_hand", "bet": 20, "committed": 20,

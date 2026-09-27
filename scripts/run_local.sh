@@ -48,7 +48,7 @@ echo "  WebSocket:  ws://localhost:${PORT}/ws?token=<JWT>"
 echo "  Документы:  http://localhost:${PORT}/docs"
 echo
 echo "  Боты за стол (в другом окне, из этой же папки):"
-echo "    python3 scripts/bot_client.py --bots 5 --hands 20"
+echo "    python3 scripts/bot_client.py --bots 4 --hands 20"
 echo
 
 exec uvicorn app.main:app --host 0.0.0.0 --port "$PORT" --ws websockets

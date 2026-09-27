@@ -221,20 +221,21 @@ def _run(coro) -> None:
 
 
 # ------------------------------------------------------------------- тесты
-def test_six_bots_play_a_full_session():
-    """Шесть ботов проходят весь путь: автоподбор → раздачи → выход."""
+def test_full_table_plays_a_full_session():
+    """Полный стол ботов проходит весь путь: автоподбор → раздачи → выход."""
 
     async def scenario() -> None:
         _fast_timers()
         await _reset()
-        bots = [Bot(i) for i in range(6)]
+        n = settings.max_seats
+        bots = [Bot(i) for i in range(n)]
         await _seat_bots(bots)
 
         table_ids = {b.table_id for b in bots}
         assert len(table_ids) == 1, f"автоподбор развёл ботов по столам: {table_ids}"
         table = registry.get(bots[0].table_id)
-        assert table is not None and table.occupied_count == 6
-        assert sorted(b.seat_no for b in bots) == [0, 1, 2, 3, 4, 5]
+        assert table is not None and table.occupied_count == n
+        assert sorted(b.seat_no for b in bots) == list(range(n))
 
         await _wait_for_hands(bots, 8)
 
@@ -243,8 +244,8 @@ def test_six_bots_play_a_full_session():
 
         # фишки не появляются и не исчезают: стеки + балансы неизменны
         total = sum(b.balance for b in bots) + sum(s.stack for s in table.seats if s.is_occupied)
-        assert total == 6 * settings.guest_start_balance, (
-            f"фишки не сходятся: {total} вместо {6 * settings.guest_start_balance}"
+        assert total == n * settings.guest_start_balance, (
+            f"фишки не сходятся: {total} вместо {n * settings.guest_start_balance}"
         )
 
         # каждая раздача дошла до конца и раздала банк
@@ -257,7 +258,7 @@ def test_six_bots_play_a_full_session():
         for bot in bots:
             await table.submit("leave", {"player_id": bot.player_id}, wait=True)
         await asyncio.sleep(0.3)
-        assert sum(b.balance for b in bots) == 6 * settings.guest_start_balance
+        assert sum(b.balance for b in bots) == n * settings.guest_start_balance
         await registry.shutdown()
 
     _run(scenario())
@@ -392,7 +393,8 @@ def test_quick_join_fills_tables_before_opening_new_ones():
         tables = registry.all_tables()
         assert len(tables) == 2, f"ожидалось 2 стола на 8 игроков, создано {len(tables)}"
         counts = sorted(t.occupied_count for t in tables)
-        assert counts == [2, 6], f"первый стол должен быть заполнен целиком, получено {counts}"
+        expected = [8 - settings.max_seats, settings.max_seats]
+        assert counts == expected, f"первый стол должен быть заполнен целиком, получено {counts}"
 
         # повторный заход того же игрока отклоняется
         from app.services.table import TableError  # noqa: PLC0415

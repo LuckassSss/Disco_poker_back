@@ -42,7 +42,7 @@ app = FastAPI(
     title="Neon Poker Backend",
     version="0.1.0",
     description=(
-        "Бэкенд онлайн-покера (No-Limit Texas Hold'em, 6-max). "
+        "Бэкенд онлайн-покера (No-Limit Texas Hold'em, 5-max). "
         "Клиент — тонкий, вся логика и все карты живут на сервере."
     ),
     lifespan=lifespan,

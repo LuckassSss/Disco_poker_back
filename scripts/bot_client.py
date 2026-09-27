@@ -133,7 +133,7 @@ def _decide(options: dict, rng: Lcg) -> tuple[str, int]:
 async def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--host", default="localhost:8000")
-    parser.add_argument("--bots", type=int, default=6)
+    parser.add_argument("--bots", type=int, default=5)
     parser.add_argument("--hands", type=int, default=10)
     parser.add_argument("--stake", default="low")
     parser.add_argument("--quiet", action="store_true")

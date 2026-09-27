@@ -89,7 +89,7 @@ class Settings(BaseSettings):
     burn_cards: bool = True
 
     # --- стол ---------------------------------------------------------------
-    max_seats: int = 6
+    max_seats: int = 5
     min_players_to_start: int = 2
     #: секунд на решение игрока
     action_timeout_seconds: float = 20.0
