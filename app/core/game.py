@@ -556,7 +556,8 @@ class HandEngine:
                 },
             )
         else:
-            # банк забирает единственный оставшийся — карты не вскрываем
+            # банк забирает единственный оставшийся без вскрытия;
+            # его карты всё равно показываем в hand_finished
             for seat_no in active:
                 ranks[seat_no] = _WALKOVER
 
@@ -596,6 +597,8 @@ class HandEngine:
                         "amount": a.amount,
                         "pot_index": a.pot_index,
                         "combination": showdown.get(a.seat_no, (None, None))[1],
+                        # карты победителя видят все — и после вскрытия, и когда остальные спасовали
+                        "cards": list(self.seats[a.seat_no].hole_cards),
                     }
                     for a in awards
                 ],

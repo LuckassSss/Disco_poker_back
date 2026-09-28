@@ -152,7 +152,7 @@ HTTP нужен только чтобы получить токен и посм�
 | `street` | всем | `street`, `cards` (новые), `board` (весь), `pot` |
 | `uncalled_bet_returned` | всем | излишек ставки вернулся игроку |
 | `showdown` | всем | вскрытые руки: `cards`, `combination`, `best_five` |
-| `hand_finished` | всем | `board`, `total_pot`, `pots`, `winners`, `stacks` |
+| `hand_finished` | всем | `board`, `total_pot`, `pots`, `winners` (у каждого `cards` — карты победителя, и без вскрытия), `stacks` |
 
 `action_required` ходящему игроку:
 

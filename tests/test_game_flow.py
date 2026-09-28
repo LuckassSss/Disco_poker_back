@@ -175,6 +175,10 @@ def test_everyone_folds_blind_wins_and_gets_change():
     assert seats[0].stack == 1000
     result = engine.result
     assert result is not None and not result.went_to_showdown
+    winner = events_of(engine, "hand_finished")[0]["winners"][0]
+    assert winner["seat_no"] == 2
+    assert winner["cards"] == seats[2].hole_cards, "карты победителя показываются всем"
+    assert len(winner["cards"]) == 2
 
 
 def test_showdown_awards_best_hand():
