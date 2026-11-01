@@ -16,7 +16,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `app/api/ws.py` — эндпоинт `/ws`; `app/api/http.py` — `/auth/register|login|refresh|guest`, `/health`.
 - `app/auth/` — `tokens.py` (JWT, `SessionStore` отзыва), `users.py` (логины, scrypt).
 - `app/protocol/messages.py` — схема сообщений. Без Postgres/Redis работает в памяти.
-- `Dockerfile`, `docker-compose.yml` (postgres + redis + api, `make up`).
+- `Dockerfile`, `docker-compose.yml` (postgres + redis + api, `make up`). На сервере (Ubuntu) — `scripts/server_up.sh`:
+  создаёт `.env.prod` со случайными `JWT_SECRET`/`POSTGRES_PASSWORD` (не в git, не терять), `up -d --build`, ждёт `/health`.
+  Все сервисы `restart: unless-stopped`, порты Postgres/Redis — только на `127.0.0.1` (Docker публикует в обход ufw).
 
 **В рантайме сервера нет генерации случайных чисел**: колоды заранее замешаны (`scripts/generate_decks.py` →
 `data/decks.json`), `deck_provider.py` выдаёт их по глобальному счётчику (`INCR` в Redis, без него — локальный).

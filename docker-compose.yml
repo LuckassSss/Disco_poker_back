@@ -1,12 +1,25 @@
+# Локально: `make up` (значения по умолчанию ниже).
+# На сервере: `scripts/server_up.sh` — подставит секреты из .env.prod.
+
+# логи контейнеров без ротации за месяцы работы забивают диск
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   postgres:
     image: postgres:16-alpine
+    restart: unless-stopped
+    logging: *logging
     environment:
       POSTGRES_USER: poker
-      POSTGRES_PASSWORD: poker
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-poker}
       POSTGRES_DB: poker
+    # только localhost: Docker публикует порты в обход ufw
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -17,9 +30,11 @@ services:
 
   redis:
     image: redis:7-alpine
+    restart: unless-stopped
+    logging: *logging
     command: ["redis-server", "--appendonly", "yes"]
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redisdata:/data
     healthcheck:
@@ -30,19 +45,22 @@ services:
 
   api:
     build: .
+    restart: unless-stopped
+    logging: *logging
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     environment:
-      ENVIRONMENT: dev
+      ENVIRONMENT: ${ENVIRONMENT:-dev}
       LOG_LEVEL: INFO
-      POSTGRES_DSN: postgresql+asyncpg://poker:poker@postgres:5432/poker
+      POSTGRES_DSN: postgresql+asyncpg://poker:${POSTGRES_PASSWORD:-poker}@postgres:5432/poker
       REDIS_URL: redis://redis:6379/0
-      JWT_SECRET: dev-secret-change-me
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+      GUEST_START_BALANCE: ${GUEST_START_BALANCE:-10000}
     ports:
-      - "8000:8000"
+      - "${API_PORT:-8000}:8000"
     volumes:
       # data примонтирован отдельно: колоды можно перегенерировать без пересборки образа
       - ./data:/srv/data:ro
