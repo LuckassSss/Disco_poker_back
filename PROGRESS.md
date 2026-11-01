@@ -10,6 +10,12 @@
 - Авторизация по логину и паролю: `/auth/register|login|refresh`, токен 3 дня, отзыв прежних по `jti` (`SessionStore`).
 - `hand_finished`: у каждого из `winners` поле `cards` — карты победителя видны всем и без вскрытия (C17 в `SPECIFICATION.md`).
 - Есть `Dockerfile` и `docker-compose.yml` (postgres + redis + api).
+- **Развёрнут на сервере:** Ubuntu, `195.209.213.51`, домен `discopok.fun` → порт 8000 (пока без TLS), запуск
+  `scripts/server_up.sh` (`.env.prod` со случайными секретами лежит только на сервере — не терять). Проверено:
+  `/health` → `environment: prod`, Redis и Postgres подключены; боты (`bot_client.py --host discopok.fun:8000`) и клиент
+  с эмулятора сыграли раздачи. Скрипт проверен и локально в Docker: регистрация переживает рестарт api.
+- **Следующее:** Caddy перед api (Let's Encrypt для `discopok.fun`, клиент на `https`/`wss`, порт 8000 закрыть снаружи);
+  возврат фишек при остановке (ниже) — до регулярных обновлений сервера.
 
 **Известные проблемы:**
 - **Остановка сервера теряет фишки на столах.** `Table.stop()` выходит из цикла (`__stop__` в `table.py`), стеки на баланс
